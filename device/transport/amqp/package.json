@@ -7,11 +7,13 @@
   "main": "index.js",
   "typings": "index.d.ts",
   "dependencies": {
+    "amqp10": "3.5.0",
     "azure-iot-amqp-base": "1.1.9",
     "azure-iot-common": "1.1.8",
     "azure-iot-device": "1.1.14",
     "debug": "^2.6.0",
-    "machina": "^2.0.0"
+    "machina": "^2.0.0",
+    "uuid": "^3.0.1"
   },
   "devDependencies": {
     "azure-iothub": "1.1.11",
