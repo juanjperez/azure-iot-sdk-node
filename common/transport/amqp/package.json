@@ -16,15 +16,15 @@
     "uuid": "^3.0.1"
   },
   "devDependencies": {
-    "sinon": "^1.17.7",
-    "sinon-as-promised": "^4.0.2",
+    "@types/node": "^7.0.12",
     "chai": "^3.5.0",
     "istanbul": "^0.4.5",
     "jshint": "^2.9.4",
     "mocha": "^3.2.0",
+    "sinon": "^2.3.4",
+    "sinon-as-promised": "^4.0.2",
     "tslint": "^5.1.0",
     "typescript": "2.2.2",
-    "@types/node": "^7.0.12",
     "uuid": "^3.0.1"
   },
   "scripts": {

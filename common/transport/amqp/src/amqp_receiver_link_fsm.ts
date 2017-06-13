@@ -4,27 +4,33 @@ import * as dbg from 'debug';
 import { EventEmitter } from 'events';
 import { Message, results, errors } from 'azure-iot-common';
 import { AmqpMessage } from './amqp_message';
-import { AmqpTransportError } from './amqp_common_errors';
 import { AmqpLink } from './amqp_link_interface';
+import { AmqpTransportError } from './amqp_common_errors';
 
 const debug = dbg('AmqpReceiverLinkFsm');
 
 export class AmqpReceiverLinkFsm  extends EventEmitter implements AmqpLink {
   private _linkAddress: string;
-  private _linkOptions: string;
+  private _linkOptions: any;
   private _linkObject: any;
   private _fsm: machina.Fsm;
   private _amqp10Client: amqp10.AmqpClient;
+  private _messageQueue: {
+    message: Message,
+    settleMethod: string,
+    callback: (err?: Error, result?: results.MessageEnqueued) => void
+  }[];
   private _attachCallback: (err?: Error) => void;
   private _detachHandler: (detachEvent: any) => void;
-  private _messageHandler: (message: AmqpMessage) => void;
   private _errorHandler: (err: Error) => void;
+  private _messageHandler: (message: AmqpMessage) => void;
 
   constructor(linkAddress: string, linkOptions: any, amqp10Client: amqp10.AmqpClient) {
     super();
     this._linkAddress = linkAddress;
     this._linkOptions = linkOptions;
     this._amqp10Client = amqp10Client;
+    this._messageQueue = [];
 
     this._detachHandler = (detachEvent: any): void => {
       this._linkObject = null;
@@ -34,25 +40,53 @@ export class AmqpReceiverLinkFsm  extends EventEmitter implements AmqpLink {
       this._fsm.transition('detached');
     };
 
-    this._messageHandler = (message: AmqpMessage): void => {
-      this.emit('message', AmqpMessage.toMessage(message));
-    };
-
     this._errorHandler = (err: Error): void => {
       this.emit('errorReceived', err);
     };
 
+    this._messageHandler = (message: AmqpMessage): void => {
+      this.emit('message', AmqpMessage.toMessage(message));
+    };
+
+    const pushToQueue = (method, message, callback) => {
+      this._messageQueue.push({
+        settleMethod: method,
+        message: message,
+        callback: callback
+      });
+    };
 
     this._fsm = new machina.Fsm({
       initialState: 'detached',
       states: {
         detached: {
+          _onEnter: () => {
+            let toSettle = this._messageQueue.shift();
+            while (toSettle) {
+              // TODO need a custom error for the client to handle
+              toSettle.callback(new Error('link is being detached'));
+              toSettle = this._messageQueue.shift();
+            }
+          },
           attach: (callback) => {
             this._attachCallback = callback;
             this._fsm.transition('attaching');
           },
-          detach: (callback) => callback(),
-          '*': () => this._fsm.deferUntilTransition('attached')
+          detach: (callback) => {
+            if (callback) callback();
+          },
+          accept: (message, callback) => {
+            pushToQueue('accept', message, callback);
+            this._fsm.transition('attaching');
+          },
+          reject: (message, callback) => {
+            pushToQueue('reject', message, callback);
+            this._fsm.transition('attaching');
+          },
+          abandon: (message, callback) => {
+            pushToQueue('abandon', message, callback);
+            this._fsm.transition('attaching');
+          }
         },
         attaching: {
           _onEnter: () => {
@@ -71,13 +105,21 @@ export class AmqpReceiverLinkFsm  extends EventEmitter implements AmqpLink {
             this._detachLink();
             this._fsm.transition('detached');
           },
-          '*': () => this._fsm.deferUntilTransition('attached')
+          accept: (message, callback) => pushToQueue('accept', message, callback),
+          reject: (message, callback) => pushToQueue('reject', message, callback),
+          abandon: (message, callback) => pushToQueue('abandon', message, callback)
         },
         attached: {
           _onEnter: () => {
             this._linkObject.on('detached', this._detachHandler);
-            this._linkObject.on('message', this._messageHandler);
             this._linkObject.on('errorReceived', this._errorHandler);
+            this._linkObject.on('message', this._messageHandler);
+
+            let toSettle = this._messageQueue.shift();
+            while (toSettle) {
+              this._fsm.handle(toSettle.settleMethod, toSettle.message, toSettle.callback);
+              toSettle = this._messageQueue.shift();
+            }
           },
           _onExit: () => {
             this._linkObject.removeListener('detached', this._detachHandler);
@@ -168,14 +210,14 @@ export class AmqpReceiverLinkFsm  extends EventEmitter implements AmqpLink {
     /*Codes_SRS_NODE_COMMON_AMQP_06_004: [The `attachReceiverLink` method shall create a policy object that contain link options to be merged if the linkOptions argument is not falsy.]*/
     /*Codes_SRS_NODE_COMMON_AMQP_16_018: [The `attachReceiverLink` method shall call `createReceiver` on the `amqp10` client object.]*/
     this._amqp10Client.createReceiver(this._linkAddress, this._linkOptions)
-      .then((receiver) => {
-        receiver.on('detached', (detached) => {
+      .then((amqp10link) => {
+        amqp10link.on('detached', (detached) => {
           debug('receiver link detached: ' + this._linkAddress);
         });
         this._amqp10Client.removeListener('client:errorReceived', clientErrorHandler);
         if (!connectionError) {
-          debug('AmqpReceiver object created for endpoint: ' + this._linkAddress);
-          this._linkObject = receiver;
+          debug('Receiver object created for endpoint: ' + this._linkAddress);
+          this._linkObject = amqp10link;
           /*Codes_SRS_NODE_COMMON_AMQP_16_020: [The `attachReceiverLink` method shall call the `done` callback with a `null` error and the link object that was created if the link was attached successfully.]*/
           this._safeCallback(done);
         } else {

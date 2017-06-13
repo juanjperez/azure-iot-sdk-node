@@ -8,7 +8,7 @@ import * as machina from 'machina';
 import { AmqpMessage } from './amqp_message';
 import { results, Message } from 'azure-iot-common';
 import { ClaimsBasedSecurityAgent } from './amqp_cbs';
-import { AmqpSenderLinkFsm } from './amqp_sender_link_fsm';
+import { SenderLink } from './sender_link';
 import { AmqpReceiverLinkFsm } from './amqp_receiver_link_fsm';
 import { AmqpLink } from './amqp_link_interface';
 
@@ -32,7 +32,7 @@ export class Amqp {
   private uri: string;
   private _amqp: amqp10.Client;
   private _receivers: { [key: string]: AmqpReceiverLinkFsm; } = {};
-  private _senders: { [key: string]: AmqpSenderLinkFsm; } = {};
+  private _senders: { [key: string]: SenderLink; } = {};
   private _disconnectHandler: (err: Error) => void;
   private _fsm: machina.Fsm;
   private _cbs: ClaimsBasedSecurityAgent;
@@ -162,10 +162,10 @@ export class Amqp {
             }
 
             if (!this._senders[endpoint]) {
-              this._senders[endpoint] = new AmqpSenderLinkFsm(endpoint, null, this._amqp);
+              this._senders[endpoint] = new SenderLink(endpoint, null, this._amqp);
             }
 
-            (this._senders[endpoint] as AmqpSenderLinkFsm).send(amqpMessage, done);
+            (this._senders[endpoint] as SenderLink).send(amqpMessage, done);
           },
           getReceiver: (endpoint: string, done: GenericAmqpBaseCallback): void => {
             /*Codes_SRS_NODE_COMMON_AMQP_16_010: [If a receiver for this endpoint doesn’t exist, the getReceiver method should create a new AmqpReceiver object and then call the done() method with the object that was just created as an argument.] */
@@ -188,7 +188,7 @@ export class Amqp {
             this._receivers[endpoint].attach(done);
           },
           attachSenderLink: (endpoint: string, linkOptions: any, done: GenericAmqpBaseCallback): void => {
-            let senderFsm = new AmqpSenderLinkFsm(endpoint, linkOptions, this._amqp);
+            let senderFsm = new SenderLink(endpoint, linkOptions, this._amqp);
             this._senders[endpoint] = senderFsm;
             this._senders[endpoint].attach(done);
           },
