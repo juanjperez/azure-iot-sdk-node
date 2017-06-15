@@ -41,34 +41,34 @@ device_provision(hubConnectionString, function (err, provisionedDevices) {
     console.log('Unable to create the devices needed.');
   } else {
     provisionedDevices.forEach(function(deviceToTest) {
-      acknowledgementProtocols.forEach(function (protocolToTest) {
-        device_acknowledge_tests(hubConnectionString, protocolToTest, deviceToTest);
-        });
-      generalProtocols.forEach(function(protocolToTest) {
-        device_service_tests(hubConnectionString, protocolToTest, deviceToTest);
-      });
+      // acknowledgementProtocols.forEach(function (protocolToTest) {
+      //   device_acknowledge_tests(hubConnectionString, protocolToTest, deviceToTest);
+      //   });
+      // generalProtocols.forEach(function(protocolToTest) {
+      //   device_service_tests(hubConnectionString, protocolToTest, deviceToTest);
+      // });
     });
 
     // In the interest of saving time, we only will perform the connection
     // tests on the shared key device.
     assert.equal(provisionedDevices[1].authenticationDescription, 'shared private key');
-    c2d_disconnect(hubConnectionString, provisionedDevices[1]);
-    d2c_disconnect(hubConnectionString, provisionedDevices[1]);
-    method_disconnect(hubConnectionString, provisionedDevices[1]);
-    throttle_disconnect(hubConnectionString, provisionedDevices[1]);
-    uploadDisconnectProtocols.forEach(function(protocolToTest) {
-      upload_disconnect(hubConnectionString, protocolToTest, provisionedDevices[1]);
-    });
-    twin_disconnect(hubConnectionString);
+    // c2d_disconnect(hubConnectionString, provisionedDevices[1]);
+    // d2c_disconnect(hubConnectionString, provisionedDevices[1]);
+    // method_disconnect(hubConnectionString, provisionedDevices[1]);
+    // throttle_disconnect(hubConnectionString, provisionedDevices[1]);
+    // uploadDisconnectProtocols.forEach(function(protocolToTest) {
+    //   upload_disconnect(hubConnectionString, protocolToTest, provisionedDevices[1]);
+    // });
+    // twin_disconnect(hubConnectionString);
 
-    generalProtocols.forEach(function(protocolToTest) {
-      sas_token_tests(hubConnectionString, protocolToTest, provisionedDevices[1]);
-    });
-    file_upload_tests(hubConnectionString, deviceHttp.Http, provisionedDevices[1]);
+    // generalProtocols.forEach(function(protocolToTest) {
+    //   sas_token_tests(hubConnectionString, protocolToTest, provisionedDevices[1]);
+    // });
+    // file_upload_tests(hubConnectionString, deviceHttp.Http, provisionedDevices[1]);
   }
-  service_client(hubConnectionString);
-  registry_tests(hubConnectionString, storageConnectionString);
-  authentication_tests(hubConnectionString);
+  // service_client(hubConnectionString);
+  // registry_tests(hubConnectionString, storageConnectionString);
+  // authentication_tests(hubConnectionString);
 
   device_teardown(hubConnectionString, provisionedDevices);
   if (!provisionedDevices || provisionedDevices.length !== 3) {
@@ -83,7 +83,7 @@ device_provision(hubConnectionString, function (err, provisionedDevices) {
   run();
 });
 
-twin_e2e_tests(hubConnectionString);
-device_method(hubConnectionString, deviceMethodsProtocols);
-job_client(hubConnectionString);
+twin_e2e_tests(hubConnectionString, [deviceAmqp.Amqp]);
+// device_method(hubConnectionString, deviceMethodsProtocols);
+// job_client(hubConnectionString);
 

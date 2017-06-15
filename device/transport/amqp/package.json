@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "azure-iothub": "1.1.11",
+    "bluebird": "^3.5.0",
     "chai": "^3.5.0",
     "istanbul": "^0.4.5",
     "jshint": "^2.9.4",

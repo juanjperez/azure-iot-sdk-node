@@ -133,17 +133,29 @@ An new Amqp message shall be instantiated.
 
 **SRS_NODE_DEVICE_AMQP_06_020: [** The `method` argument shall be the value of the amqp message `operation` annotation. **]**
 **SRS_NODE_DEVICE_AMQP_06_021: [** The `resource` argument shall be the value of the amqp message `resource` annotation. **]**
+**SRS_NODE_DEVICE_AMQP_06_031: [** If the `resource` argument terminatees in a slash, the slash shall be removed from the annotation. **]**
+**SRS_NODE_DEVICE_AMQP_06_039: [** If the `resource` argument length is zero (after terminating slash removal), the resouce annotation shall not be set. **]**
+**SRS_NODE_DEVICE_AMQP_06_032: [** If the `operation` argument is `PATCH`, the `version` annotation shall be set to `null`. **]**
 
 **SRS_NODE_DEVICE_AMQP_06_028: [** The `sendTwinRequest` method shall throw an `ArgumentError` if any members of the `properties` object fails to serialize to a string. **]**
 
-
-**SRS_NODE_DEVICE_AMQP_06_022: [** All properties (with one exception), shall be set as the part of the annotation map of the amqp message. **]**
-**SRS_NODE_DEVICE_AMQP_06_023: [** The exception is that the rid property shall be set as the `correlationId` in the properties map of the amqp message. **]**
+**SRS_NODE_DEVICE_AMQP_06_022: [** All properties (with one exception), shall be set as the part of the properties map of the amqp message. **]**
+**SRS_NODE_DEVICE_AMQP_06_023: [** The exception is that the $rid property shall be set as the `correlationId` in the properties map of the amqp message. **]**
 
 **SRS_NODE_DEVICE_AMQP_06_024: [** The `body` shall be value of the body of the amqp message. **]**
 
-**SRS_NODE_DEVICE_AMQP_06_025: [** The amqp message will be sent upstream to the IoT Hub the amqp client `send`. **]**
+**SRS_NODE_DEVICE_AMQP_06_025: [** The amqp message will be sent upstream to the IoT Hub via the amqp client `send`. **]**
 
-**SRS_NODE_DEVICE_AMQP_06_029: [** If the send is successful, then the `done` function shall be invoked (if supplied), with null `err` and the `result`. **]**
+**SRS_NODE_DEVICE_AMQP_06_040: [** If an error occurs in the `sendTwinRequest` method, the `done` callback shall be called with the error as the first parameter. **]**
+**SRS_NODE_DEVICE_AMQP_06_041: [** If an error occurs, the `sendTwinRequest` shall use the AMQP `translateError` module to convert the amqp-specific error to a transport agnostic error before passing it into the `done` callback. **]**
 
-**SRS_NODE_DEVICE_AMQP_06_030: [** If the send is unsuccessful, then the `done` function shall be invoked (if supplied), with `err`. **]**
+**SRS_NODE_DEVICE_AMQP_06_042: [** If the `sendTwinRequest` method is successful, the first parameter to the `done` callback shall be null and the second parameter shall be a MessageEnqueued object. **]**
+
+### getTwinReceiver
+
+**SRS_NODE_DEVICE_AMQP_06_033: [** The `getTwinReceiver` method shall throw an `ReferenceError` if done is falsy **]**
+**SRS_NODE_DEVICE_AMQP_06_034: [** If a twin receiver for this endpoint doesn't exist, the `getTwinReceiver` method should create a new `AmqpTwinReceiver` object. **]**
+**SRS_NODE_DEVICE_AMQP_06_035: [** If a twin receiver for this endpoint has already been created, the `getTwinReceiver` method should not create a new `AmqpTwinReceiver` object. **]**
+**SRS_NODE_DEVICE_AMQP_06_036: [** The `getTwinReceiver` method shall call the `done` method after it complete. **]**
+**SRS_NODE_DEVICE_AMQP_06_037: [** If a twin receiver for this endpoint did not previously exist, the `getTwinReceiver` method should return the a new `AmqpTwinReceiver` object as the second parameter of the `done` function with null as the first parameter. **]**
+**SRS_NODE_DEVICE_AMQP_06_038: [** If a twin receiver for this endpoint previously existed, the `getTwinReceiver` method should return the preexisting `AmqpTwinReceiver` object as the second parameter of the `done` function with null as the first parameter. **]**
